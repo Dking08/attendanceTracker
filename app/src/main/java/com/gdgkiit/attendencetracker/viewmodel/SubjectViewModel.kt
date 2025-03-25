@@ -2,6 +2,7 @@ package com.gdgkiit.attendencetracker.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,7 +12,9 @@ import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
+import java.net.HttpURLConnection
 import java.net.URL
 
 class SubjectViewModel(application: Application) : AndroidViewModel(application) {
@@ -29,39 +32,72 @@ class SubjectViewModel(application: Application) : AndroidViewModel(application)
     fun addSubject(name: String, attendance: Int, classDays: List<String>) {
         viewModelScope.launch {
             val response = fetchAttendanceData(attendance, classDays)
-            subjects.add(Subject(name, response.updatedAttendance, classDays, response.possibleLeaves))
+            subjects.add(Subject(name, attendance, classDays, response.possibleLeaves, response.remSesClass, response.updatedAttendance))
             saveSubjects()
         }
     }
 
-    data class AttendanceResponse(val updatedAttendance: Int, val possibleLeaves: Int, val attPercentage: Int)
+    data class AttendanceResponse(val updatedAttendance: Double, val possibleLeaves: Int, val remSesClass: Int)
 
     private suspend fun fetchAttendanceData(attendance: Int, classDays: List<String>): AttendanceResponse {
-        val url = "https://example.com/api/attendance?attendance=$attendance&days=${classDays.joinToString(",")}"
+
+        val fullDayNames = mapDaysToFullNames(classDays)
+
+        val requestBody = JSONObject().apply {
+            put("startDate", "2024-12-10")
+            put("endDate", "2025-4-05")
+            put("classDays", JSONArray(fullDayNames))
+            put("attendedClasses", attendance)
+        }
 
         return withContext(Dispatchers.IO) {
             try {
-//                val response = URL(url).readText()
-//                val json = JSONObject(response)
+                val url = URL("https://vercel-att-tracker.vercel.app/calculate-attendance")
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    setRequestProperty("Content-Type", "application/json")
+                    doOutput = true
+                    outputStream.write(requestBody.toString().toByteArray())
+                }
+
+                val responseText = connection.inputStream.bufferedReader().use { it.readText() }
+                val json = JSONObject(responseText)
+
                 AttendanceResponse(
-//                    updatedAttendance = json.getInt("updatedAttendance"),
-//                    possibleLeaves = json.getInt("possibleLeaves")
-                    updatedAttendance = 82,
-                    possibleLeaves = 10,
-                    attPercentage = 88
+                    updatedAttendance = json.getDouble("Percentage"),
+                    possibleLeaves = json.getInt("remainingClasses"),
+                    remSesClass = json.getInt("remainingSessionClasses")
                 )
             } catch (e: Exception) {
-                AttendanceResponse(attendance, 0, 0) // Default if API fails
+                Log.e("API_ERROR", "Failed to fetch data: ${e.message}")
+                AttendanceResponse(0.0, 0,0) // Return default values on failure
             }
         }
     }
+
+    private fun mapDaysToFullNames(shortDays: List<String>): List<String> {
+        val dayMapping = mapOf(
+            "Mon" to "Monday",
+            "Tue" to "Tuesday",
+            "Wed" to "Wednesday",
+            "Thu" to "Thursday",
+            "Fri" to "Friday",
+            "Sat" to "Saturday",
+            "Sun" to "Sunday"
+        )
+        return shortDays.mapNotNull { dayMapping[it] }
+    }
+
+
 
     private fun updateSubjectWithAPI(subject: Subject) {
         viewModelScope.launch {
             val response = fetchAttendanceData(subject.attendance, subject.classDays)
             val updatedSubject = subject.copy(
-                attendance = response.updatedAttendance,
-                possibleLeaves = response.possibleLeaves
+                attendance = subject.attendance,
+                possibleLeaves = response.possibleLeaves,
+                remSesClass = response.remSesClass,
+                attendPercentage = response.updatedAttendance
             )
             val index = subjects.indexOf(subject)
             if (index != -1) subjects[index] = updatedSubject

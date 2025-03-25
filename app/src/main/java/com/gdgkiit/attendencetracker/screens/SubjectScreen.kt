@@ -69,6 +69,12 @@ fun SubjectCard(subject: Subject, viewModel: SubjectViewModel) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(text = subject.name, style = MaterialTheme.typography.titleLarge, color = Color.White)
             Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "${subject.attendPercentage}%",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -78,6 +84,8 @@ fun SubjectCard(subject: Subject, viewModel: SubjectViewModel) {
 
                     Text(text = "Attended: ${subject.attendance}", color = Color.LightGray)
                     Text(text = "Class Days: ${subject.classDays.joinToString()}")
+                    Text(text = "Remaining Classes in Session: ${subject.remSesClass}")
+                    Text(text = "Classes to attend: ${subject.possibleLeaves}")
                     Spacer(modifier = Modifier.height(8.dp))
 //                    Button(onClick = { showDialog = true }) {
 //                        Text("Update")
@@ -95,12 +103,12 @@ fun SubjectCard(subject: Subject, viewModel: SubjectViewModel) {
                 }
             }
                 }
-                Text(
-                    text = "${subject.attendance}%",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+//                Text(
+//                    text = "${subject.attendPercentage}%",
+//                    fontSize = 24.sp,
+//                    fontWeight = FontWeight.Bold,
+//                    color = Color.White
+//                )
             }
 //            Spacer(modifier = Modifier.height(8.dp))
 //            Button(onClick = { showDialog = true }) {
@@ -149,7 +157,7 @@ fun AddSubjectDialog(viewModel: SubjectViewModel, onDismiss: () -> Unit) {
                 OutlinedTextField(
                     value = attendance,
                     onValueChange = { attendance = it },
-                    label = { Text("Current Attendance %") },
+                    label = { Text("Classes Attended:") },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(12.dp))
