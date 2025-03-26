@@ -215,7 +215,7 @@ fun UpdateAttendanceDialog(subject: Subject, viewModel: SubjectViewModel, onDism
             OutlinedTextField(
                 value = newAttendance,
                 onValueChange = { newAttendance = it },
-                label = { Text("Enter new %") }
+                label = { Text("Enter Number of Classes Present: ") }
             )
         },
         confirmButton = {

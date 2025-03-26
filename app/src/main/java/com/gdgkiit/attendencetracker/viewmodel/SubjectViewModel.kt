@@ -116,8 +116,15 @@ class SubjectViewModel(application: Application) : AndroidViewModel(application)
     fun updateAttendance(subjectName: String, newAttendance: Int) {
         val index = subjects.indexOfFirst { it.name == subjectName }
         if (index != -1) {
-            subjects[index] = subjects[index].copy(attendance = newAttendance)
-            saveSubjects()
+            viewModelScope.launch {
+                val response = fetchAttendanceData(newAttendance, subjects[index].classDays)
+                subjects[index] = subjects[index].copy(attendance = newAttendance)
+                subjects[index] = subjects[index].copy(possibleLeaves = response.possibleLeaves)
+                subjects[index] = subjects[index].copy(remSesClass = response.remSesClass)
+                subjects[index] =
+                    subjects[index].copy(attendPercentage = response.updatedAttendance)
+                saveSubjects()
+            }
         }
     }
 
