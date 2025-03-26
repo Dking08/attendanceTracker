@@ -2,6 +2,7 @@ package com.gdgkiit.attendencetracker.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.health.connect.datatypes.units.Percentage
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.AndroidViewModel
@@ -26,12 +27,12 @@ class SubjectViewModel(application: Application) : AndroidViewModel(application)
 
     init {
         loadSubjects()
-        updateSubjectsFromAPI()
+//        updateSubjectsFromAPI()
     }
 
     fun addSubject(name: String, attendance: Int, classDays: List<String>) {
         viewModelScope.launch {
-            val response = fetchAttendanceData(attendance, classDays)
+            val response = fetchAttendanceData(attendance, classDays, 0)
             subjects.add(Subject(name, attendance, classDays, response.possibleLeaves, response.remSesClass, response.updatedAttendance))
             saveSubjects()
         }
@@ -39,7 +40,7 @@ class SubjectViewModel(application: Application) : AndroidViewModel(application)
 
     data class AttendanceResponse(val updatedAttendance: Double, val possibleLeaves: Int, val remSesClass: Int)
 
-    private suspend fun fetchAttendanceData(attendance: Int, classDays: List<String>): AttendanceResponse {
+    private suspend fun fetchAttendanceData(attendance: Int, classDays: List<String>, percentage: Int): AttendanceResponse {
 
         val fullDayNames = mapDaysToFullNames(classDays)
 
@@ -48,6 +49,7 @@ class SubjectViewModel(application: Application) : AndroidViewModel(application)
             put("endDate", "2025-4-05")
             put("classDays", JSONArray(fullDayNames))
             put("attendedClasses", attendance)
+            put("modPercentage", percentage)
         }
 
         return withContext(Dispatchers.IO) {
@@ -92,7 +94,7 @@ class SubjectViewModel(application: Application) : AndroidViewModel(application)
 
     private fun updateSubjectWithAPI(subject: Subject) {
         viewModelScope.launch {
-            val response = fetchAttendanceData(subject.attendance, subject.classDays)
+            val response = fetchAttendanceData(subject.attendance, subject.classDays, 0)
             val updatedSubject = subject.copy(
                 attendance = subject.attendance,
                 possibleLeaves = response.possibleLeaves,
@@ -112,12 +114,11 @@ class SubjectViewModel(application: Application) : AndroidViewModel(application)
             }
         }
     }
-
-    fun updateAttendance(subjectName: String, newAttendance: Int) {
+    fun updateAttendance(subjectName: String, newAttendance: Int, newPercentage: Int) {
         val index = subjects.indexOfFirst { it.name == subjectName }
         if (index != -1) {
             viewModelScope.launch {
-                val response = fetchAttendanceData(newAttendance, subjects[index].classDays)
+                val response = fetchAttendanceData(newAttendance, subjects[index].classDays, newPercentage)
                 subjects[index] = subjects[index].copy(attendance = newAttendance)
                 subjects[index] = subjects[index].copy(possibleLeaves = response.possibleLeaves)
                 subjects[index] = subjects[index].copy(remSesClass = response.remSesClass)

@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material3.*
@@ -12,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -202,25 +204,36 @@ fun AddSubjectDialog(viewModel: SubjectViewModel, onDismiss: () -> Unit) {
     )
 }
 
-
-
 @Composable
 fun UpdateAttendanceDialog(subject: Subject, viewModel: SubjectViewModel, onDismiss: () -> Unit) {
     var newAttendance by remember { mutableStateOf(subject.attendance.toString()) }
+    var newPercentage by remember { mutableStateOf(subject.attendPercentage.toString()) }
 
     AlertDialog(
         onDismissRequest = { onDismiss() },
         title = { Text("Update Attendance") },
         text = {
-            OutlinedTextField(
-                value = newAttendance,
-                onValueChange = { newAttendance = it },
-                label = { Text("Enter Number of Classes Present: ") }
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = newAttendance,
+                    onValueChange = { newAttendance = it.filter { char -> char.isDigit() } },
+                    label = { Text("Enter Number of Classes Present") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+                OutlinedTextField(
+                    value = newPercentage,
+                    onValueChange = { newPercentage = it.filter { char -> char.isDigit() } },
+                    label = { Text("Enter Percentage") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+            }
         },
         confirmButton = {
             Button(onClick = {
-                viewModel.updateAttendance(subject.name, newAttendance.toIntOrNull() ?: subject.attendance)
+                val attendanceValue = newAttendance.toIntOrNull() ?: subject.attendance
+                val percentageValue = newPercentage.toIntOrNull() ?: 0
+
+                viewModel.updateAttendance(subject.name, attendanceValue, percentageValue)
                 onDismiss()
             }) {
                 Text("Save")
