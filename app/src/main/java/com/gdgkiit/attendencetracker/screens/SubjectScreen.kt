@@ -222,9 +222,11 @@ fun UpdateAttendanceDialog(subject: Subject, viewModel: SubjectViewModel, onDism
                 )
                 OutlinedTextField(
                     value = newPercentage,
-                    onValueChange = { newPercentage = it.filter { char -> char.isDigit() } },
+                    onValueChange = { if (it.count { char -> char == '.' } <= 1 && it.all { char -> char.isDigit() || char == '.' }) {
+                        newPercentage = it
+                    } },
                     label = { Text("Enter Percentage") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
             }
         },
