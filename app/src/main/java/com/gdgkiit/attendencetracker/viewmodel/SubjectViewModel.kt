@@ -2,7 +2,6 @@ package com.gdgkiit.attendencetracker.viewmodel
 
 import android.app.Application
 import android.content.Context
-import android.health.connect.datatypes.units.Percentage
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.AndroidViewModel
